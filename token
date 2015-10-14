@@ -1,0 +1,1 @@
+curl -v --noproxy '*' -XPOST --data "fred=1" http://127.0.0.1:8080/api/token?grant_type=authorization_code\&code=cfc1eaaae40601e4e899cb324b156f81\&redirect_uri=http://127.0.0.1:9090/\&client_id=oauth2test\&client_secret=oauth2clientsecret
