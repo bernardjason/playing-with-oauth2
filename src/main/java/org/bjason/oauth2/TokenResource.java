@@ -21,6 +21,9 @@
 
 package org.bjason.oauth2;
 
+import java.util.LinkedHashSet;
+import java.util.Set;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.POST;
@@ -57,18 +60,13 @@ private Database database;
     public Response authorize(@Context HttpServletRequest request) throws OAuthSystemException {
         try {
 
-        	
             OAuthTokenRequest oauthRequest = new OAuthTokenRequest(request);
-            
+
             OAuthIssuer oauthIssuerImpl = new OAuthIssuerImpl(new MD5Generator());
             
-            if (!checkClientId(oauthRequest.getClientId())) {
-                return buildInvalidClientIdResponse();
-            }
-
-            if (!checkClientSecret(oauthRequest.getClientSecret())) {
-                return buildInvalidClientSecretResponse();
-            }
+            if ( Common.checkClientIdandSecret(oauthRequest) == false ) {
+				return Common.unauthorisedResponse();
+			}
 
             if (oauthRequest.getParam(OAuth.OAUTH_GRANT_TYPE).equals(GrantType.AUTHORIZATION_CODE.toString())) {
             	TOKEN_STATE ts = checkAuthCode(oauthRequest.getParam(OAuth.OAUTH_CODE));
@@ -91,7 +89,23 @@ private Database database;
             
             GenerictokenData authCodeFromUser = database.getTokenCode(oauthRequest.getParam(OAuth.OAUTH_CODE));
             GenerictokenData newAccessToken = new GenerictokenData(accessToken,Common.THIRTY_SECONDS);
-            newAccessToken.copyPermission(authCodeFromUser);
+            Set<String> requestedScopes = oauthRequest.getScopes();
+            
+            // check if we are limiting scope to access token
+            if ( requestedScopes != null && requestedScopes.size() > 0  ) {
+            	LinkedHashSet<String> permToGrant = new LinkedHashSet<String>();
+            	for(String what : requestedScopes) {
+            		if ( authCodeFromUser.allowedTo(what) == false ) {
+            			return buildBadAuthCodeResponse("invalid scope");            		
+            		}
+            		permToGrant.add(what+"true");
+            	}
+            
+            	newAccessToken.copyPermission(permToGrant);
+            } else {
+            	newAccessToken.copyPermission(authCodeFromUser);
+            }
+            
             database.addAccessToken(newAccessToken);
             
             OAuthResponse response = OAuthASResponse
@@ -142,14 +156,6 @@ private Database database;
                 .setErrorDescription("invalid username or password")
                 .buildJSONMessage();
         return Response.status(response.getResponseStatus()).entity(response.getBody()).build();
-    }
-
-    private boolean checkClientId(String clientId) {
-        return true;
-    }
-
-    private boolean checkClientSecret(String secret) {
-        return true;
     }
 
     private TOKEN_STATE checkAuthCode(String authCode) {

@@ -13,6 +13,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
@@ -41,6 +42,11 @@ public class AuthResource {
 			throws URISyntaxException, OAuthSystemException {
 		try {
 			OAuthAuthzRequest oauthRequest = new OAuthAuthzRequest(request);
+			
+			if ( Common.checkClientIdandSecret(oauthRequest) == false ) {
+				return Common.unauthorisedResponse();
+			}
+			
 			OAuthIssuerImpl oauthIssuerImpl = new OAuthIssuerImpl(
 					new MD5Generator());
 
@@ -75,9 +81,13 @@ public class AuthResource {
 					.getParam(OAuth.OAUTH_REDIRECT_URI);
 			final OAuthResponse response = builder.location(redirectURI)
 					.buildQueryMessage();
-			URI url = new URI(response.getLocationUri());
-
-			return Response.status(Status.FOUND).location(url).build();
+			
+			if ( redirectURI != null  ) {
+				URI url = new URI(response.getLocationUri());
+				return Response.status(Status.FOUND).location(url).build();
+			}
+			
+			return Response.ok(builder.buildBodyMessage().getBody(),MediaType.APPLICATION_FORM_URLENCODED).build();
 		} catch (OAuthProblemException e) {
 			final Response.ResponseBuilder responseBuilder = Response
 					.status(HttpServletResponse.SC_OK);

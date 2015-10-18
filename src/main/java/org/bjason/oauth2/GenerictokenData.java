@@ -40,7 +40,10 @@ public class GenerictokenData {
 		permission=new ArrayList<String>(authCodeFromUser.permission);
 		
 	}
-
+	public void copyPermission(Set<String> requestedScopes) {
+		permission.addAll(requestedScopes);
+	}
+	
 	@Override
 	public String toString() {
 		return "GenerictokenData [expires=" + expires + ", genericToken="
@@ -52,5 +55,6 @@ public class GenerictokenData {
 	public void addPemission(Set<String> scopes) {
 		permission.addAll(scopes);
 	}
+	
 	
 }

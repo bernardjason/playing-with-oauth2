@@ -66,7 +66,7 @@
 			
 			window.top.location.href = "http://127.0.0.1:8080/api/auth?redirect_uri="
 					+ redirect_uri
-					+ "&response_type=code&client_id=oauth2test"+"&scope="+perm;
+					+ "&response_type=code&client_id=oauth2test	&client_secret=oauth2clientsecret"+"&scope="+perm;
 		});
 	});
 	$(document).ready(function() {
